@@ -1,0 +1,8 @@
+{
+  "name": "Modern Care Consulting",
+  "description": "Educational and psychology consulting services by Michelle Mendivil, PhD, specializing in dissertation support and the impact of wearable technology on well-being.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
