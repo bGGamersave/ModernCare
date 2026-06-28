@@ -188,6 +188,18 @@ function handleChatError(error: any, isWizard: boolean, language: string = "en",
     error?.status === 429 ||
     error?.statusCode === 429;
 
+  const isApiKeyIssue = 
+    !process.env.GEMINI_API_KEY || 
+    process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY" || 
+    process.env.GEMINI_API_KEY.trim() === "" ||
+    errStr.includes("API key") || 
+    errStr.includes("API_KEY") || 
+    errStr.includes("key not found") || 
+    errStr.includes("INVALID_ARGUMENT") ||
+    errStr.includes("unauthorized") ||
+    errStr.includes("403") ||
+    errStr.includes("401");
+
   if (isBillingOrQuota) {
     if (isWizard) {
       const msg = `Hello! It looks like our AI assistant's billing quota is temporarily exhausted or prepayment credits are depleted in Google AI Studio. 
@@ -215,9 +227,53 @@ Don't worry! You can reach Dr. Michelle Mendivil directly via email at info@mode
     }
   }
 
-  // Generic Error Fallback
+  if (isApiKeyIssue) {
+    if (isWizard) {
+      const msg = `Hello! It looks like our AI assistant's API key is not currently configured or is invalid in Google AI Studio. 
+
+Don't worry! Your progress has been saved in this form. If you finish filling out the wizard and click "Submit Request", your entire history and selections will still be sent directly to Dr. Michelle Mendivil, and she will reach out to you personally. 
+
+Feel free to also email Dr. Mendivil directly at info@moderncareconsulting.com. 
+
+*(Note for Administrator: Please verify that GEMINI_API_KEY is correctly set in the Google AI Studio secrets console.)*`;
+      return res.json({ text: msg });
+    } else {
+      const isEs = language === "es";
+      const msg = isEs 
+        ? `¡Hola! Parece que la clave de nuestro asistente de inteligencia artificial no está configurada o es inválida en Google AI Studio. 
+
+¡No te preocupes! Puedes contactar a la Dra. Michelle Mendivil directamente por correo electrónico en info@moderncareconsulting.com para recibir consultas personalizadas de asesoría académica y edición. 
+
+*(Nota para el Administrador: Por favor, verifique que la clave GEMINI_API_KEY esté configurada correctamente en el panel de secretos de Google AI Studio.)*` 
+        : `Hello! It looks like our AI assistant's API key is not currently configured or is invalid in Google AI Studio. 
+
+Don't worry! You can reach Dr. Michelle Mendivil directly via email at info@moderncareconsulting.com for personalized academic advisor support, coaching, or editing inquiries. 
+
+*(Note for Administrator: Please verify that GEMINI_API_KEY is correctly set in the Google AI Studio secrets console.)*`;
+      return res.json({ text: msg });
+    }
+  }
+
+  // Generic Graceful Error Fallback
   console.error("Gemini API Error:", error);
-  return res.status(500).json({ error: error.message || "Failed to generate response." });
+  if (isWizard) {
+    const msg = `Hello! I am currently experiencing a minor system interruption. 
+
+Don't worry! Your progress has been saved in this form. If you finish filling out the wizard and click "Submit Request", your entire history and selections will still be sent directly to Dr. Michelle Mendivil, and she will reach out to you personally. 
+
+Feel free to also email Dr. Mendivil directly at info@moderncareconsulting.com.`;
+    return res.json({ text: msg });
+  } else {
+    const isEs = language === "es";
+    const msg = isEs 
+      ? `¡Hola! Actualmente estoy experimentando una pequeña interrupción en mi sistema de inteligencia artificial. 
+
+¡No te preocupes! Puedes contactar a la Dra. Michelle Mendivil directamente por correo electrónico en info@moderncareconsulting.com para recibir consultas personalizadas de asesoría académica y edición.`
+      : `Hello! I am currently experiencing a minor system interruption with my AI component. 
+
+Don't worry! You can reach Dr. Michelle Mendivil directly via email at info@moderncareconsulting.com for personalized academic advisor support, coaching, or editing inquiries.`;
+    return res.json({ text: msg });
+  }
 }
 
 async function startServer() {
