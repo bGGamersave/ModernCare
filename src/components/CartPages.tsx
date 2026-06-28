@@ -85,9 +85,19 @@ export const CartPage = () => {
             <span className="text-3xl font-bold text-brand-text font-sans">${total}</span>
           </div>
           <div className="mt-10 flex justify-end">
-            <Link to="/agreement" className="px-10 py-4 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.2em] text-[10px] hover:bg-brand-pink transition-all shadow-xl shadow-brand-earth/20">
-              Proceed to Agreement
-            </Link>
+            {items.length === 1 && items[0].id === "dissertation-study" ? (
+              <Link 
+                to="/checkout" 
+                state={{ email: localStorage.getItem("dissertation_purchase_email") || "" }}
+                className="px-10 py-4 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.2em] text-[10px] hover:bg-brand-pink transition-all shadow-xl shadow-brand-earth/20"
+              >
+                Proceed to Checkout
+              </Link>
+            ) : (
+              <Link to="/agreement" className="px-10 py-4 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.2em] text-[10px] hover:bg-brand-pink transition-all shadow-xl shadow-brand-earth/20">
+                Proceed to Agreement
+              </Link>
+            )}
           </div>
         </div>
       )}
@@ -115,6 +125,13 @@ export const AgreementPage = () => {
     return "";
   });
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  React.useEffect(() => {
+    const onlyDissertation = items.length === 1 && items[0].id === "dissertation-study";
+    if (onlyDissertation) {
+      navigate("/checkout", { replace: true, state: { email: email || localStorage.getItem("dissertation_purchase_email") || "" } });
+    }
+  }, [items, navigate, email]);
 
   const allTermsChecked = AGREEMENT_TERMS.every(t => checkedTerms[t.id]);
   const isFormValid = allTermsChecked && signature.trim() !== "" && email.trim() !== "" && date !== "";
@@ -235,7 +252,7 @@ export const CheckoutPage = () => {
 
   // Retrieve agreement detail from route state if available
   const agreementState = location.state || {};
-  const email = agreementState.email || "";
+  const email = agreementState.email || localStorage.getItem("dissertation_purchase_email") || "";
 
   const successParam = searchParams.get("success");
   const demoParam = searchParams.get("demo");
