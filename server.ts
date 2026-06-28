@@ -397,17 +397,48 @@ CRITICAL INSTRUCTIONS:
 
       const stripe = getStripe();
       
-      const lineItems = items.map((item: any) => ({
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: item.name,
-            description: item.description || `Modern Care Consulting - ${item.name}`,
+      const OFFICIAL_PRICES: Record<string, number> = {
+        "dissertation-study": 1,
+        "coaching-zoom": 125,
+        "coaching-2weeks": 400,
+        "coaching-30days": 600,
+        "coaching-30days-edit": 1200,
+        "coaching-3months": 3200,
+        "coaching-6months": 5100,
+        "coaching-1year": 8500,
+        "editing-developmental": 350,
+        "editing-copy": 100,
+        "editing-proofreading": 150,
+        "editing-apa": 120,
+        "editing-styleguide": 100,
+        "editing-ref-audit": 80,
+        "editing-0": 350,
+        "editing-1": 100,
+        "editing-2": 150,
+        "editing-3": 120,
+        "editing-4": 100,
+        "editing-5": 80,
+        "coaching-package": 250,
+        "zoom-1hr": 125,
+      };
+
+      const lineItems = items.map((item: any) => {
+        let price = item.price;
+        if (item.id && OFFICIAL_PRICES[item.id] !== undefined) {
+          price = OFFICIAL_PRICES[item.id];
+        }
+        return {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.name,
+              description: item.description || `Modern Care Consulting - ${item.name}`,
+            },
+            unit_amount: Math.round(price * 100), // in cents
           },
-          unit_amount: Math.round(item.price * 100), // in cents
-        },
-        quantity: 1,
-      }));
+          quantity: 1,
+        };
+      });
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
@@ -418,7 +449,13 @@ CRITICAL INSTRUCTIONS:
         cancel_url: `${origin}/checkout?canceled=true`,
         metadata: {
           itemsCount: items.length.toString(),
-          itemsJson: JSON.stringify(items.map(i => ({ id: i.id, name: i.name, price: i.price }))).slice(0, 500)
+          itemsJson: JSON.stringify(items.map(i => {
+            let price = i.price;
+            if (i.id && OFFICIAL_PRICES[i.id] !== undefined) {
+              price = OFFICIAL_PRICES[i.id];
+            }
+            return { id: i.id, name: i.name, price };
+          })).slice(0, 500)
         }
       });
 
