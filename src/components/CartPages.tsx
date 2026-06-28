@@ -71,9 +71,9 @@ export const CartPage = () => {
         <div className="bg-brand-offwhite rounded-[40px] p-10 border border-brand-pink/10">
           <ul className="space-y-6 mb-10">
             {items.map((item, index) => (
-              <li key={`${item.id}-${index}`} className="flex justify-between items-center border-b border-brand-pink/10 pb-4">
-                <span className="text-xl font-serif text-brand-text">{item.name}</span>
-                <div className="flex items-center gap-6">
+              <li key={`${item.id}-${index}`} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 border-b border-brand-pink/10 pb-4">
+                <span className="text-lg sm:text-xl font-serif text-brand-text">{item.name}</span>
+                <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
                   <span className="font-bold text-brand-earth font-sans">${item.price}</span>
                   <button onClick={() => removeItem(item.id)} className="text-xs font-bold uppercase tracking-widest text-brand-pink hover:text-red-500 transition-colors">Remove</button>
                 </div>
@@ -373,7 +373,7 @@ export const CheckoutPage = () => {
 
         <div>
           <h3 className="text-[10px] font-bold font-sans uppercase tracking-[0.2em] mb-4 text-brand-text/50">Payment Gateway</h3>
-          <div className="bg-white p-6 rounded-3xl border border-brand-pink/20 flex items-center justify-between shadow-xs">
+          <div className="bg-white p-6 rounded-3xl border border-brand-pink/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-brand-pink/10 flex items-center justify-center text-brand-pink animate-pulse">
                 <CreditCard size={22} />
@@ -384,7 +384,7 @@ export const CheckoutPage = () => {
               </div>
             </div>
             
-            <div className="bg-indigo-600 text-white font-sans text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full select-none">
+            <div className="bg-indigo-600 text-white font-sans text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full select-none w-fit">
               Stripe Verified
             </div>
           </div>

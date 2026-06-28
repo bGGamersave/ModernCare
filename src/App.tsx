@@ -96,14 +96,14 @@ const Navigation = () => {
             </Link>
           </div>
           
-          {/* Centered 'Get Started Now' Button */}
+          {/* Centered 'Get Started Here' Button */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center z-10">
             <Link 
               to="/wizard"
               style={{ marginLeft: "0px" }}
-              className="inline-flex items-center justify-center px-6 py-2.5 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.2em] text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
+              className="inline-flex items-center justify-center px-3 py-1.5 xs:px-4 xs:py-2 sm:px-6 sm:py-2.5 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[8px] xs:text-[9px] sm:text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
             >
-              Get Started Now
+              Get Started Here
             </Link>
           </div>
           
@@ -201,7 +201,7 @@ const Navigation = () => {
                         onClick={() => setIsRestOpen(false)}
                         className="mx-2 mt-1 bg-brand-earth text-white text-center py-2.5 rounded-xl font-bold font-sans uppercase text-[10px] tracking-widest hover:bg-brand-pink transition-all shadow-md shadow-brand-earth/10"
                       >
-                        Get Started Now
+                        Get Started Here
                       </Link>
                     </div>
                   </motion.div>
@@ -290,7 +290,7 @@ const Navigation = () => {
                 onClick={handleLinkClick}
                 className="block w-full py-4 bg-brand-earth text-white text-center rounded-full font-bold font-sans uppercase tracking-widest text-[10px] shadow-lg shadow-brand-earth/20"
               >
-                Get Started Now
+                Get Started Here
               </Link>
             </div>
           </motion.div>

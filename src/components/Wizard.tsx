@@ -327,7 +327,7 @@ ${transcriptText}
   return (
     <div className="max-w-4xl mx-auto px-4 py-20">
       <div className="mb-12">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 relative">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex flex-col items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
@@ -343,7 +343,7 @@ ${transcriptText}
             </div>
           ))}
           {/* Progress lines */}
-          <div className="absolute left-0 top-1/2 h-px bg-brand-pink/10 -z-10 w-full hidden md:block"></div>
+          <div className="absolute left-0 top-5 h-px bg-brand-pink/10 -z-10 w-full hidden md:block"></div>
         </div>
       </div>
 
