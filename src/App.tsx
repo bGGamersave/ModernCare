@@ -94,8 +94,9 @@ const Navigation = () => {
           {/* Centered 'Get Started Now' Button */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center z-10">
             <Link 
-              to="/wizard" 
-              className="inline-flex items-center justify-center px-4 py-2 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-widest text-[8px] sm:text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
+              to="/wizard"
+              style={{ marginLeft: "-45px" }}
+              className="inline-flex items-center justify-center px-6 py-2.5 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.2em] text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
             >
               Get Started Now
             </Link>
@@ -596,19 +597,6 @@ const Hero = () => {
             Your journey gets easier <span className="italic text-brand-earth underline decoration-brand-pink/40 underline-offset-[12px]">NOW</span>
           </h1>
 
-          {/* Responsive Embedded YouTube Video */}
-          <div className="w-full max-w-2xl mx-auto mb-12">
-            <div className="relative aspect-video rounded-[32px] overflow-hidden shadow-2xl border-6 border-brand-offwhite">
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/5UxijgZpfHU"
-                title="Michelle Mendivil, PhD - Academic Journey Support"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              ></iframe>
-            </div>
-          </div>
-
           {/* Moved the image right under h1, separated by 1/2 inch (48px / my-12) */}
           <div className="relative w-full max-w-md my-12 mx-auto">
             <div className="relative aspect-[4/5] rounded-[48px] overflow-hidden shadow-2xl border-6 border-brand-offwhite z-10">
@@ -783,6 +771,19 @@ const DissertationOffer = () => {
           
           <div className="max-w-xl mx-auto text-lg font-serif text-brand-text/70 mb-16 italic border-l border-brand-pink/50 pl-8 py-2 text-left">
             My 297-page doctoral study explored the intricate intersection of technology and the human psyche. For $1, the complete analysis is yours.
+          </div>
+
+          {/* Embedded YouTube Video of Dissertation Journey */}
+          <div className="w-full max-w-2xl mx-auto mb-16">
+            <div className="relative aspect-video rounded-[32px] overflow-hidden shadow-2xl border-6 border-brand-offwhite">
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/5UxijgZpfHU"
+                title="Michelle Mendivil, PhD - Academic Journey Support"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              ></iframe>
+            </div>
           </div>
 
           <div className="bg-brand-offwhite p-12 rounded-[60px] flex flex-col items-center border border-brand-pink/10 shadow-sm">
