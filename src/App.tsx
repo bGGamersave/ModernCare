@@ -95,7 +95,7 @@ const Navigation = () => {
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center z-10">
             <Link 
               to="/wizard"
-              style={{ marginLeft: "-45px" }}
+              style={{ marginLeft: "0px" }}
               className="inline-flex items-center justify-center px-6 py-2.5 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.2em] text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
             >
               Get Started Now
