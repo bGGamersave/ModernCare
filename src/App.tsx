@@ -87,7 +87,12 @@ const Navigation = () => {
         <div className="flex justify-between h-20 items-center relative">
           <div className="flex-shrink-0">
             <Link to="/" className="text-base xs:text-lg sm:text-2xl font-black font-serif tracking-tight lowercase italic text-brand-text leading-tight flex flex-col sm:block">
-              <span>modern care</span> <span className="text-brand-earth not-italic font-light sm:ml-1">consulting</span>
+              <span className="flex items-center gap-1.5 flex-wrap">
+                <span>modern care</span>
+                <span className="text-brand-earth not-italic font-light">consulting</span>
+                <span className="text-brand-pink/40 not-italic font-light text-xs sm:text-sm hidden lg:inline">|</span>
+                <span className="text-[10px] sm:text-xs tracking-[0.15em] font-sans uppercase font-bold text-brand-pink/80 not-italic hidden lg:inline">dissertation coaching</span>
+              </span>
             </Link>
           </div>
           
@@ -1015,7 +1020,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
           <div>
             <h3 className="text-2xl font-black font-serif italic tracking-tight lowercase">
-              modern care <span className="text-brand-earth not-italic font-light">consulting</span>
+              modern care <span className="text-brand-earth not-italic font-light">consulting</span> <span className="text-xs tracking-[0.15em] font-sans uppercase font-bold text-brand-pink/80 not-italic block md:inline-block md:ml-2">| dissertation coaching</span>
             </h3>
             <p className="text-brand-text/40 font-serif text-sm italic tracking-tight mt-2">Nurturing academic excellence since {new Date().getFullYear()}.</p>
           </div>
