@@ -29,6 +29,32 @@ export const ChatBot = () => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Chatbot connectivity and operability status
+  const [status, setStatus] = useState<"online" | "offline" | "checking">("checking");
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const res = await fetch("/api/chatbot/status");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "online") {
+            setStatus("online");
+          } else {
+            setStatus("offline");
+          }
+        } else {
+          setStatus("offline");
+        }
+      } catch (err) {
+        setStatus("offline");
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     // Update initial message based on language if no interaction has happened yet
     if (messages.length === 1 && messages[0].role === "bot") {
@@ -201,8 +227,14 @@ export const ChatBot = () => {
                   <h3 className="text-brand-text font-bold text-sm tracking-tight">{language === 'es' ? 'Asistente de Michelle' : "Michelle's Assistant"}</h3>
                   <div className="flex items-center gap-3 mt-0.5">
                     <div className="flex items-center gap-1">
-                      <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
-                      <span className="text-[9px] uppercase font-sans font-bold tracking-widest text-brand-text/40">Online</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${status === "online" ? "bg-green-400 animate-pulse" : status === "checking" ? "bg-amber-400 animate-pulse" : "bg-red-500"}`}></div>
+                      <span className="text-[9px] uppercase font-sans font-bold tracking-widest text-brand-text/40">
+                        {status === "online" 
+                          ? (language === "es" ? "En línea" : "Online") 
+                          : status === "checking" 
+                            ? (language === "es" ? "Conectando" : "Connecting") 
+                            : (language === "es" ? "Desconectado" : "Offline")}
+                      </span>
                     </div>
                     
                     {/* Language Switcher */}
@@ -383,15 +415,18 @@ export const ChatBot = () => {
                 <div className="relative flex-1">
                   <input
                     type="text"
-                    placeholder={language === "es" ? "Pregúntame lo que quieras..." : "Ask me anything..."}
-                    className="w-full bg-brand-offwhite rounded-full py-3 px-6 pr-12 text-sm font-serif italic outline-none border border-transparent focus:border-brand-pink/30 transition-all shadow-inner"
+                    disabled={status === "offline"}
+                    placeholder={status === "offline"
+                      ? (language === "es" ? "Asistente desconectado..." : "Assistant offline...")
+                      : language === "es" ? "Pregúntame lo que quieras..." : "Ask me anything..."}
+                    className={`w-full bg-brand-offwhite rounded-full py-3 px-6 pr-12 text-sm font-serif italic outline-none border border-transparent focus:border-brand-pink/30 transition-all shadow-inner ${status === "offline" ? "opacity-50 cursor-not-allowed" : ""}`}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    onKeyDown={(e) => e.key === "Enter" && status !== "offline" && handleSend()}
                   />
                   <button 
                     onClick={handleSend}
-                    disabled={(!input.trim() && !attachedPdf) || isLoading}
+                    disabled={(!input.trim() && !attachedPdf) || isLoading || status === "offline"}
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-brand-earth text-white rounded-full flex items-center justify-center hover:bg-brand-pink transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send size={14} />

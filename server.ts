@@ -353,6 +353,19 @@ CRITICAL INSTRUCTIONS:
     }
   });
 
+  // API Route to check chatbot connectivity and operability status
+  app.get("/api/chatbot/status", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey || apiKey.trim() === "" || apiKey === "undefined") {
+        return res.json({ status: "offline", reason: "missing_api_key" });
+      }
+      return res.json({ status: "online" });
+    } catch (error) {
+      return res.json({ status: "offline", reason: "server_error" });
+    }
+  });
+
   // API Route for the general bubbly Latina assistant ChatBot
   app.post("/api/general/chat", async (req, res) => {
     try {
