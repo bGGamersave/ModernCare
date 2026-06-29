@@ -276,9 +276,8 @@ Don't worry! You can reach Dr. Michelle Mendivil directly via email at info@mode
   }
 }
 
-async function startServer() {
-  const app = express();
-  app.use(express.json({ limit: "20mb" }));
+const app = express();
+app.use(express.json({ limit: "20mb" }));
 
   // API Route for the academic wizard advisor chatbot
   app.post("/api/wizard/chat", async (req, res) => {
@@ -855,9 +854,10 @@ CRITICAL INSTRUCTIONS:
     }
   });
 
-  // Provide static files in production or Vite middleware in development
-  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), "dist/index.html"));
+// Provide static files in production or Vite middleware in development
+const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), "dist/index.html"));
 
+async function configureVite() {
   if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -886,10 +886,16 @@ CRITICAL INSTRUCTIONS:
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-  });
 }
 
-startServer();
+configureVite().then(() => {
+  if (process.env.NODE_ENV !== "production") {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }
+}).catch(err => {
+  console.error("Failed to configure Vite middleware:", err);
+});
+
+export default app;
