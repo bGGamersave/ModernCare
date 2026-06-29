@@ -59,7 +59,7 @@ const Navigation = () => {
     { name: t("Coaching", "Asesoría"), href: "/coaching" },
     { name: t("Editing", "Edición"), href: "/editing" },
     { name: t("Pricing", "Precios"), href: "/pricing" },
-    { name: t("Zooms", "Sesiones Zoom"), href: "/zooms" },
+    { name: t("Virtual Session", "Sesión Virtual"), href: "/zooms" },
     { name: t("Classes", "Clases"), href: "/classes" },
     { name: t("Referrals", "Recomendaciones"), href: "/referral" },
     { name: t("Dissertation", "Disertación"), href: "/dissertation" },
@@ -175,7 +175,7 @@ const Navigation = () => {
                       {[
                         { name: t("Coaching", "Asesoría"), href: "/coaching" },
                         { name: t("Editing", "Edición"), href: "/editing" },
-                        { name: t("Zooms", "Sesiones Zoom"), href: "/zooms" },
+                        { name: t("Virtual Session", "Sesión Virtual"), href: "/zooms" },
                         { name: t("Classes", "Clases"), href: "/classes" },
                         { name: t("Referrals", "Recomendaciones"), href: "/referral" },
                         { name: t("Members", "Miembros"), href: "/members" },
@@ -432,14 +432,14 @@ const ZoomsPage = () => {
   return (
     <div className="pt-32 pb-20">
       <div className="max-w-4xl mx-auto px-4 text-center">
-        <h1 className="text-5xl font-serif text-brand-text mb-8">{t("Zoom", "Sesiones")} <span className="italic text-brand-earth">{t("Sessions", "Zoom")}</span></h1>
+        <h1 className="text-5xl font-serif text-brand-text mb-8">{t("Virtual", "Sesión")} <span className="italic text-brand-earth">{t("Session", "Virtual")}</span></h1>
         <div className="w-20 h-1 bg-brand-pink mx-auto mb-12 rounded-full"></div>
         <div className="bg-brand-offwhite p-12 rounded-[50px] inline-block border border-brand-pink/10 shadow-sm max-w-md w-full">
           <Video size={48} className="mx-auto mb-8 text-brand-earth" />
           <h2 className="text-3xl font-medium mb-4">{t("1-Hour One-on-One", "1 Hora Uno a Uno")}</h2>
           <div className="text-6xl font-light text-brand-text mb-8">$125</div>
           <p className="font-serif italic text-brand-text/60 mb-10">{t("Direct support whenever you need it. Clear a block in just one session.", "Apoyo directo cuando lo necesite. Despeje un bloqueo en una sola sesión.")}</p>
-          <AddToCartButton item={{ id: "zoom-1hr", name: t("1-Hour One-on-One Zoom", "Sesión de Zoom de 1 Hora Uno a Uno"), price: 125 }} />
+          <AddToCartButton item={{ id: "zoom-1hr", name: t("1-Hour One-on-One Virtual Session", "Sesión Virtual de 1 Hora Uno a Uno"), price: 125 }} />
         </div>
       </div>
     </div>

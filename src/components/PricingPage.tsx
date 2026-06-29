@@ -31,9 +31,9 @@ interface PricingPlan {
 const COACHING_PLANS: PricingPlan[] = [
   {
     id: "coaching-zoom",
-    name: "1-Hour Zoom Session",
+    name: "1-Hour Virtual Session",
     price: 125,
-    description: "Start with a 1-hour Zoom Session to discuss your research goals, resolve immediate blocks, or map out your dissertation roadmap directly with Dr. Mendivil.",
+    description: "Start with a 1-hour Virtual Session to discuss your research goals, resolve immediate blocks, or map out your dissertation roadmap directly with Dr. Mendivil.",
     features: [
       "1-Hour Live video consultation",
       "Direct session with Dr. Mendivil, PhD",
