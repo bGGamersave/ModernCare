@@ -1151,7 +1151,7 @@ const Footer = () => {
             <h3 className="text-2xl font-black font-serif italic tracking-tight lowercase">
               modern care <span className="text-brand-earth not-italic font-light">consulting</span> <span className="text-xs tracking-[0.15em] font-sans uppercase font-bold text-brand-pink/80 not-italic block md:inline-block md:ml-2">| {t("dissertation coaching", "asesoría de disertación")}</span>
             </h3>
-            <p className="text-brand-text/40 font-serif text-sm italic tracking-tight mt-2">{t("Nurturing academic excellence since", "Fomentando la excelencia académica desde")} {new Date().getFullYear()}.</p>
+            <p className="text-brand-text/40 font-serif text-sm italic tracking-tight mt-2">{t("Nurturing academic excellence", "Fomentando la excelencia académica")}</p>
           </div>
           <div className="md:text-right">
             <p className="text-brand-text/30 font-bold font-sans uppercase tracking-[0.2em] text-[9px] mb-2 font-black">Michelle Mendivil, PhD</p>
