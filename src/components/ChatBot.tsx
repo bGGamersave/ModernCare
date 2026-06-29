@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MessageCircle, X, Send, Loader2, User, Bot, Paperclip, Trash2, FileText } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, User, Bot, Paperclip, Trash2, FileText, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "./LanguageContext";
@@ -395,6 +395,22 @@ export const ChatBot = () => {
 
             {/* Input Form */}
             <div className="p-4 bg-white border-t border-brand-pink/10">
+              {status === "offline" && (
+                <div className="mb-3 p-3.5 bg-brand-pink/5 rounded-2xl border border-brand-pink/10 text-center flex flex-col items-center gap-2">
+                  <p className="text-xs font-serif italic text-brand-text">
+                    {language === "es"
+                      ? "El asistente de IA está desconectado. Por favor, envía un correo personalizado directamente a:"
+                      : "The AI chatbot is currently offline. Please send a quick custom email directly to:"}
+                  </p>
+                  <a
+                    href="mailto:michelle@moderncareconsulting.com?subject=Inquiry regarding Academic Dissertation Coaching & Services"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-earth hover:bg-brand-pink text-white rounded-full text-[10px] font-sans font-bold uppercase tracking-widest transition-all shadow-md shadow-brand-earth/10 hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    <Mail size={12} />
+                    michelle@moderncareconsulting.com
+                  </a>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
