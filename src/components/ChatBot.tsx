@@ -4,6 +4,8 @@ import { MessageCircle, X, Send, Loader2, User, Bot, Paperclip, Trash2, FileText
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { useLanguage } from "./LanguageContext";
+import { GoogleGenAI } from "@google/genai";
+import mammoth from "mammoth";
 
 interface Message {
   role: "user" | "bot";
@@ -13,6 +15,164 @@ interface Message {
     data: string; // base64
   };
 }
+
+const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+  const binaryString = window.atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+};
+
+const extractStringsFromDoc = (base64Data: string): string => {
+  let text = "";
+  try {
+    const binaryString = window.atob(base64Data);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const utf16decoder = new TextDecoder("utf-16le");
+    const utf16Str = utf16decoder.decode(bytes);
+    const utf16Cleaned = utf16Str.replace(/[^\x20-\x7E\s\u00A0-\u00FF\u0100-\u017F]/g, "");
+    const words = utf16Cleaned.split(/\s+/).filter(w => w.trim().length > 1 && !/^[^\w\s]{3,}$/.test(w));
+    if (words.length > 10) {
+      text = words.join(" ");
+    }
+  } catch (e) {
+    console.warn("Failed UTF-16 extraction for .doc", e);
+  }
+
+  if (text.length < 50) {
+    try {
+      const binaryString = window.atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const utf8decoder = new TextDecoder("utf-8");
+      const asciiStr = utf8decoder.decode(bytes);
+      const asciiCleaned = asciiStr.replace(/[^\x20-\x7E\s]/g, "");
+      const words = asciiCleaned.split(/\s+/).filter(w => w.trim().length > 1 && !/^[^\w\s]{2,}$/.test(w));
+      text = words.join(" ");
+    } catch (e) {
+      console.warn("Failed UTF-8 extraction for .doc", e);
+    }
+  }
+
+  text = text.replace(/\s+/g, " ").trim();
+  if (text.length > 20000) {
+    text = text.slice(0, 20000) + "... [Extracted text truncated due to length]";
+  }
+  return text || "[Unparseable binary .doc content]";
+};
+
+const sanitizeContentsForGemini = async (chatMessages: Message[]) => {
+  const mapped = chatMessages.map(m => {
+    const role = m.role === "user" ? "user" as const : "model" as const;
+    return { role, text: m.content, pdf: m.pdf };
+  });
+
+  const firstUserIdx = mapped.findIndex(m => m.role === "user");
+  if (firstUserIdx === -1) {
+    return [];
+  }
+
+  const sliced = mapped.slice(firstUserIdx);
+  const contents: any[] = [];
+
+  for (const msg of sliced) {
+    const parts: any[] = [];
+    if (msg.pdf && msg.pdf.data) {
+      const fileName = msg.pdf.name || "document";
+      const fileExt = fileName.split('.').pop()?.toLowerCase();
+
+      if (fileExt === "pdf") {
+        parts.push({
+          inlineData: {
+            mimeType: "application/pdf",
+            data: msg.pdf.data
+          }
+        });
+        parts.push({
+          text: `[Attached PDF Document: ${fileName}]\n\n${msg.text}`
+        });
+      } else if (fileExt === "docx") {
+        try {
+          const arrayBuffer = base64ToArrayBuffer(msg.pdf.data);
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          const extractedText = (result.value || "").trim();
+          parts.push({
+            text: `[Attached Word Document (.docx): ${fileName}]\n--- EXTRACTED CONTENT ---\n${extractedText || "[Empty Document]"}\n--- END EXTRACTED CONTENT ---\n\n${msg.text}`
+          });
+        } catch (err: any) {
+          console.error("Failed to parse docx using mammoth:", err);
+          parts.push({
+            text: `[Attached Word Document (.docx): ${fileName} - Error Parsing Content]\n\n${msg.text}`
+          });
+        }
+      } else if (fileExt === "doc") {
+        try {
+          const extractedText = extractStringsFromDoc(msg.pdf.data);
+          parts.push({
+            text: `[Attached Word Document (.doc): ${fileName}]\n--- EXTRACTED CONTENT ---\n${extractedText}\n--- END EXTRACTED CONTENT ---\n\n${msg.text}`
+          });
+        } catch (err: any) {
+          console.error("Failed to parse doc:", err);
+          parts.push({
+            text: `[Attached Word Document (.doc): ${fileName} - Error Parsing Content]\n\n${msg.text}`
+          });
+        }
+      } else {
+        try {
+          const binaryString = window.atob(msg.pdf.data);
+          const textContent = new TextDecoder("utf-8").decode(
+            new Uint8Array(binaryString.split("").map(c => c.charCodeAt(0)))
+          );
+          parts.push({
+            text: `[Attached file: ${fileName}]\n--- EXTRACTED CONTENT ---\n${textContent}\n--- END EXTRACTED CONTENT ---\n\n${msg.text}`
+          });
+        } catch (err) {
+          parts.push({
+            text: `[Attached file: ${fileName}]\n\n${msg.text}`
+          });
+        }
+      }
+    } else {
+      parts.push({ text: msg.text });
+    }
+
+    if (contents.length === 0) {
+      contents.push({
+        role: "user",
+        parts
+      });
+    } else {
+      const last = contents[contents.length - 1];
+      if (last.role === msg.role) {
+        last.parts.push(...parts);
+      } else {
+        contents.push({
+          role: msg.role,
+          parts
+        });
+      }
+    }
+  }
+
+  return contents;
+};
+
+const getGeminiClient = () => {
+  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+  if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
+    throw new Error("Missing Gemini API Key");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,25 +193,16 @@ export const ChatBot = () => {
   const [status, setStatus] = useState<"online" | "offline" | "checking">("checking");
 
   useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const res = await fetch("/api/chatbot/status");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status === "online") {
-            setStatus("online");
-          } else {
-            setStatus("offline");
-          }
-        } else {
-          setStatus("offline");
-        }
-      } catch (err) {
+    const checkStatus = () => {
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
         setStatus("offline");
+      } else {
+        setStatus("online");
       }
     };
     checkStatus();
-    const interval = setInterval(checkStatus, 30000);
+    const interval = setInterval(checkStatus, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -166,35 +317,53 @@ export const ChatBot = () => {
 
     try {
       const history = [...messages, userMessageObj];
+      const sanitized = await sanitizeContentsForGemini(history);
       
-      const response = await fetch("/api/general/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: history.map(m => ({
-            role: m.role,
-            text: m.content,
-            pdf: m.pdf
-          })),
-          language,
-        }),
+      const systemInstruction = `You are Michelle's Virtual Assistant. You are a Latina American woman who is straight to business. You are an expert on Michelle Mendivil, PhD, her academic journey, and her consulting business, Modern Care Consulting. 
+
+Michelle Mendivil, PhD, is an expert academic consultant and teacher. She earned her PhD from Grand Canyon University (GCU). Her dissertation, titled 'Adults’ Perceptions of Wearable-Fitness-Devices on Psychological Well-Being and Motivation to Engage in Physical Activities', was successfully defended on November 4, 2025. 
+
+Modern Care Consulting offers:
+- Coaching: One-on-one sessions for dissertations and research.
+- Editing: Structural refining and strict APA compliance.
+- Strategy: Virtual sessions to clear academic bottlenecks.
+- Academic Tutoring: Support for High School, Junior College, and University (Associates, Bachelor's, Master's).
+
+Professional Affiliations:
+- ACHE San Diego (Member)
+- MANA of North County (Member)
+- SHPE San Diego (Member & STEM Volunteer): Michelle is passionate about community outreach, mentoring, and STEM advocacy.
+
+Membership Plans:
+- Standard Membership: $1,350/year. Includes 12 one-on-one sessions, retreat priority, and more.
+- VIP Year: $8,500/year. Unlimited everything, daily accountability, and prioritised access.
+
+Michelle also offers her 297-page dissertation for just $1.
+
+Contact: info@modernCareconsulting.com
+Social: Instagram (@doctoramendivil), LinkedIn (michellemendivil8).
+
+CURRENT LANGUAGE PREFERENCE: ${language === "es" ? "Spanish (Español)" : "English"}.
+
+Your personality: Straight to business, highly knowledgeable, professional, and very helpful. You are focused, concise, and direct with zero unnecessary fluff. Always refer to Michelle as 'Dr. Mendivil' or 'Michelle' with respect.
+
+CRITICAL INSTRUCTIONS:
+1. Speak primarily in the user's selected language (${language}).
+2. Keep all responses very concise, clear, and business-focused. No long-winded paragraphs.
+3. When asking for further information or questions to understand their needs, you MUST put each question in bullet point format (e.g., using "-").
+4. Provide direct links to membership plans and pricing when necessary using markdown: [Membership Plans](/pricing) or [Pricing & Services](/pricing).`;
+
+      const client = getGeminiClient();
+      const response = await client.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: sanitized,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        }
       });
 
-      if (!response.ok) {
-        let errMsg = "Failed to generate response on server.";
-        try {
-          const errData = await response.json();
-          if (errData && errData.error) {
-            errMsg = `Server error: ${errData.error}`;
-          }
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
-      const botResponse = data.text || (language === "es" ? "Lo siento, no pude procesar eso." : "I'm sorry, I couldn't process that.");
+      const botResponse = response.text || (language === "es" ? "Lo siento, no pude procesar eso." : "I'm sorry, I couldn't process that.");
       setMessages((prev) => [...prev, { role: "bot", content: botResponse }]);
     } catch (error) {
       console.error("Chat Error:", error);
