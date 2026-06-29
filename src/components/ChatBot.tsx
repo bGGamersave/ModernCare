@@ -174,7 +174,7 @@ const getGeminiClient = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-export const ChatBot = () => {
+export const ChatBot = ({ viewMode }: { viewMode?: "mobile" | "desktop" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
@@ -377,14 +377,14 @@ CRITICAL INSTRUCTIONS:
   };
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] font-serif flex flex-col items-end">
+    <div className={`${viewMode === "mobile" ? "absolute" : "fixed"} bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] font-serif flex flex-col items-end`}>
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="mb-4 w-[calc(100vw-32px)] sm:w-[400px] h-[500px] max-h-[calc(100vh-120px)] bg-white rounded-[32px] shadow-2xl border border-brand-pink/20 flex flex-col overflow-hidden"
+            className={`mb-4 ${viewMode === "mobile" ? "w-[calc(430px-32px)] max-w-[calc(100vw-32px)]" : "w-[calc(100vw-32px)] sm:w-[400px]"} h-[500px] max-h-[calc(100vh-120px)] bg-white rounded-[32px] shadow-2xl border border-brand-pink/20 flex flex-col overflow-hidden`}
           >
             {/* Header */}
             <div className="bg-brand-pink/10 p-5 flex items-center justify-between border-b border-brand-pink/10">

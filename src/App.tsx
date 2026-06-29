@@ -18,6 +18,8 @@ import {
   Gift,
   Lock,
   ShoppingCart,
+  Smartphone,
+  Monitor,
 } from "lucide-react";
 
 import { ChatBot } from "./components/ChatBot";
@@ -47,7 +49,12 @@ const ScrollToTop = () => {
   return null;
 };
 
-const Navigation = () => {
+interface NavigationProps {
+  viewMode: "mobile" | "desktop";
+  setViewMode: (mode: "mobile" | "desktop") => void;
+}
+
+const Navigation = ({ viewMode, setViewMode }: NavigationProps) => {
   const { t, language, setLanguage } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isRestOpen, setIsRestOpen] = useState(false);
@@ -82,32 +89,34 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-brand-pink/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20 items-center relative">
-          <div className="flex-shrink-0">
-            <Link to="/" className="text-base xs:text-lg sm:text-2xl font-black font-serif tracking-tight lowercase italic text-brand-text leading-tight flex flex-col sm:block">
-              <span className="flex items-center gap-1.5 flex-wrap">
+    <nav className={`fixed top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-brand-pink/20 ${viewMode === "mobile" ? "w-full max-w-[430px] left-1/2 -translate-x-1/2" : "left-0 right-0"}`}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-20 items-center relative gap-2">
+          {/* Logo element: highly responsive to screen width */}
+          <div className="flex-shrink-1 min-w-0">
+            <Link to="/" className="text-[10px] xs:text-xs sm:text-lg md:text-xl font-black font-serif tracking-tight lowercase italic text-brand-text leading-tight block">
+              <span className="flex items-center gap-1 flex-wrap whitespace-nowrap">
                 <span>modern care</span>
                 <span className="text-brand-earth not-italic font-light">consulting</span>
-                <span className="text-brand-pink/40 not-italic font-light text-xs sm:text-sm hidden lg:inline">|</span>
-                <span className="text-[10px] sm:text-xs tracking-[0.15em] font-sans uppercase font-bold text-brand-pink/80 not-italic hidden lg:inline">{t("dissertation coaching", "asesoría de disertación")}</span>
+                <span className="text-brand-pink/40 not-italic font-light hidden xl:inline">|</span>
+                <span className="text-[10px] tracking-[0.12em] font-sans uppercase font-bold text-brand-pink/80 not-italic hidden xl:inline">{t("dissertation coaching", "asesoría de disertación")}</span>
               </span>
             </Link>
           </div>
           
-          {/* Centered 'Get Started Here' Button */}
+          {/* Centered 'Get Started Here' Button - Fully visible and auto-adjusted for both mobile and desktop screens */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center z-10">
             <Link 
               to="/wizard"
               style={{ marginLeft: "0px" }}
-              className="inline-flex items-center justify-center px-3 py-1.5 xs:px-4 xs:py-2 sm:px-6 sm:py-2.5 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[8px] xs:text-[9px] sm:text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
+              className="inline-flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-brand-earth text-white rounded-full font-bold font-sans uppercase tracking-[0.08em] sm:tracking-[0.15em] text-[7px] xs:text-[8px] sm:text-[10px] hover:bg-brand-text transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 text-center whitespace-nowrap"
             >
               {t("Get Started Here", "Comenzar Aquí")}
             </Link>
           </div>
           
-          <div className="hidden md:flex items-center space-x-6">
+          {/* Desktop right elements */}
+          <div className="hidden md:flex items-center space-x-3 lg:space-x-6 flex-shrink-0">
             <Link
               to="/dissertation"
               className={`transition-colors font-medium font-sans uppercase text-[10px] tracking-[0.2em] ${
@@ -126,14 +135,40 @@ const Navigation = () => {
               {t("Pricing", "Precios")}
             </Link>
           
+            {/* View Mode Toggle: Mobile / Desktop */}
+            <div className="flex items-center border border-brand-pink/15 rounded-full p-0.5 bg-brand-pink/5" title="Switch View Frame">
+              <button
+                onClick={() => setViewMode("mobile")}
+                className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                  viewMode === "mobile" 
+                    ? "bg-brand-text text-brand-offwhite shadow-sm scale-105" 
+                    : "text-brand-text/60 hover:text-brand-pink hover:bg-brand-pink/5"
+                }`}
+                title={t("Mobile Frame", "Marco Móvil")}
+              >
+                <Smartphone size={13} strokeWidth={viewMode === "mobile" ? 2.5 : 1.75} />
+              </button>
+              <button
+                onClick={() => setViewMode("desktop")}
+                className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                  viewMode === "desktop" 
+                    ? "bg-brand-text text-brand-offwhite shadow-sm scale-105" 
+                    : "text-brand-text/60 hover:text-brand-pink hover:bg-brand-pink/5"
+                }`}
+                title={t("Desktop View", "Vista Completa")}
+              >
+                <Monitor size={13} strokeWidth={viewMode === "desktop" ? 2.5 : 1.75} />
+              </button>
+            </div>
+
             <Link 
               to="/cart" 
-              className="relative flex items-center justify-center p-2 text-brand-text/70 hover:text-brand-pink transition-colors mr-2"
+              className="relative flex items-center justify-center p-2 text-brand-text/70 hover:text-brand-pink transition-colors"
               title={t("Shopping Cart", "Carrito de Compras")}
             >
-              <ShoppingCart size={20} />
+              <ShoppingCart size={18} />
               {items.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-pink text-white rounded-full text-[8px] font-bold flex items-center justify-center">
+                <span className="absolute top-0 right-0 w-4 h-4 bg-brand-pink text-white rounded-full text-[8px] font-bold flex items-center justify-center">
                   {items.length}
                 </span>
               )}
@@ -143,7 +178,7 @@ const Navigation = () => {
             <button
               id="desktop-language-switcher"
               onClick={() => setLanguage(language === "en" ? "es" : "en")}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 bg-brand-pink/5 hover:bg-brand-pink/10 border border-brand-pink/15 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-brand-pink/30 cursor-pointer text-brand-text/80 hover:text-brand-earth font-bold font-sans text-[10px] tracking-[0.12em] uppercase mr-2"
+              className="relative flex items-center gap-1 px-2.5 py-1.5 bg-brand-pink/5 hover:bg-brand-pink/10 border border-brand-pink/15 rounded-full transition-all focus:outline-none cursor-pointer text-brand-text/80 hover:text-brand-earth font-bold font-sans text-[9px] tracking-[0.1em] uppercase"
               title={language === "en" ? "Switch to Spanish" : "Switch to English"}
             >
               <span className={`transition-all ${language === "en" ? "text-brand-earth font-black underline underline-offset-4 decoration-2" : "opacity-50 hover:opacity-85"}`}>Eng</span>
@@ -159,7 +194,7 @@ const Navigation = () => {
                 aria-label="Toggle extra navigation links"
                 title="More menu links"
               >
-                {isRestOpen ? <X size={20} className="text-brand-pink" /> : <Menu size={20} />}
+                {isRestOpen ? <X size={18} className="text-brand-pink" /> : <Menu size={18} />}
               </button>
 
               <AnimatePresence>
@@ -210,15 +245,42 @@ const Navigation = () => {
             </div>
           </div>
 
-          <div className="md:hidden flex items-center space-x-2">
+          {/* Mobile right elements */}
+          <div className="md:hidden flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+            {/* View Mode Switcher (Mobile/Desktop Icons) to the left of the shopping cart icon */}
+            <div className="flex items-center border border-brand-pink/15 rounded-full p-0.5 bg-brand-pink/5" title="Switch View Frame">
+              <button
+                onClick={() => setViewMode("mobile")}
+                className={`p-1 rounded-full transition-all duration-200 cursor-pointer ${
+                  viewMode === "mobile" 
+                    ? "bg-brand-text text-brand-offwhite shadow-sm" 
+                    : "text-brand-text/50 hover:text-brand-pink"
+                }`}
+                title={t("Mobile Frame", "Marco Móvil")}
+              >
+                <Smartphone size={12} strokeWidth={viewMode === "mobile" ? 2.5 : 1.75} />
+              </button>
+              <button
+                onClick={() => setViewMode("desktop")}
+                className={`p-1 rounded-full transition-all duration-200 cursor-pointer ${
+                  viewMode === "desktop" 
+                    ? "bg-brand-text text-brand-offwhite shadow-sm" 
+                    : "text-brand-text/50 hover:text-brand-pink"
+                }`}
+                title={t("Desktop View", "Vista Completa")}
+              >
+                <Monitor size={12} strokeWidth={viewMode === "desktop" ? 2.5 : 1.75} />
+              </button>
+            </div>
+
             <Link 
               to="/cart" 
-              className="relative flex items-center justify-center p-2 text-brand-text/70 hover:text-brand-pink transition-colors"
+              className="relative flex items-center justify-center p-1.5 text-brand-text/70 hover:text-brand-pink transition-colors"
               title={t("Shopping Cart", "Carrito de Compras")}
             >
-              <ShoppingCart size={20} />
+              <ShoppingCart size={18} />
               {items.length > 0 && (
-                <span className="absolute top-0 right-0 w-4 h-4 bg-brand-pink text-white rounded-full text-[8px] font-bold flex items-center justify-center font-sans">
+                <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-brand-pink text-white rounded-full text-[7px] font-bold flex items-center justify-center font-sans">
                   {items.length}
                 </span>
               )}
@@ -227,7 +289,7 @@ const Navigation = () => {
               onClick={() => setIsOpen(!isOpen)}
               className="text-brand-text focus:outline-none p-1.5"
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -574,33 +636,63 @@ const Home = () => (
 );
 
 export default function App() {
+  const [viewMode, setViewMode] = useState<"mobile" | "desktop">("mobile");
+
   return (
     <LanguageProvider>
       <Router>
         <CartProvider>
           <ScrollToTop />
-          <div className="min-h-screen bg-white font-serif text-brand-text selection:bg-brand-pink/30 selection:text-brand-text">
-            <Navigation />
-            <main>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/coaching" element={<CoachingPage />} />
-                <Route path="/editing" element={<EditingPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/zooms" element={<ZoomsPage />} />
-                <Route path="/classes" element={<ClassesPage />} />
-                <Route path="/referral" element={<ReferralPage />} />
-                <Route path="/dissertation" element={<DissertationPage />} />
-                <Route path="/members" element={<MembersPage />} />
-                <Route path="/wizard" element={<WizardPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/agreement" element={<AgreementPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-              </Routes>
-            </main>
-            <Footer />
-            <ChatBot />
-          </div>
+          {viewMode === "mobile" ? (
+            <div className="min-h-screen bg-brand-offwhite/35 flex justify-center">
+              {/* Clean, borderless mobile viewport layout (no status bar, notch or thick phone border) */}
+              <div className="w-full max-w-[430px] min-h-screen bg-white shadow-2xl border-x border-brand-pink/15 flex flex-col relative transition-all duration-300">
+                <Navigation viewMode={viewMode} setViewMode={setViewMode} />
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/coaching" element={<CoachingPage />} />
+                    <Route path="/editing" element={<EditingPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/zooms" element={<ZoomsPage />} />
+                    <Route path="/classes" element={<ClassesPage />} />
+                    <Route path="/referral" element={<ReferralPage />} />
+                    <Route path="/dissertation" element={<DissertationPage />} />
+                    <Route path="/members" element={<MembersPage />} />
+                    <Route path="/wizard" element={<WizardPage />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/agreement" element={<AgreementPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <ChatBot viewMode={viewMode} />
+              </div>
+            </div>
+          ) : (
+            <div className="min-h-screen bg-white font-serif text-brand-text selection:bg-brand-pink/30 selection:text-brand-text transition-all duration-300">
+              <Navigation viewMode={viewMode} setViewMode={setViewMode} />
+              <main>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/coaching" element={<CoachingPage />} />
+                  <Route path="/editing" element={<EditingPage />} />
+                  <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/zooms" element={<ZoomsPage />} />
+                  <Route path="/classes" element={<ClassesPage />} />
+                  <Route path="/referral" element={<ReferralPage />} />
+                  <Route path="/dissertation" element={<DissertationPage />} />
+                  <Route path="/members" element={<MembersPage />} />
+                  <Route path="/wizard" element={<WizardPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/agreement" element={<AgreementPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                </Routes>
+              </main>
+              <Footer />
+              <ChatBot viewMode={viewMode} />
+            </div>
+          )}
         </CartProvider>
       </Router>
     </LanguageProvider>
