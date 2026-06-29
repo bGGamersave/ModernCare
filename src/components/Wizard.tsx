@@ -1,4 +1,4 @@
-import { useState, FormEvent, useRef } from "react";
+import { useState, FormEvent, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ChevronRight, 
@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import { GoogleGenAI } from "@google/genai";
+import mammoth from "mammoth";
 
 type Level = "Doctorate" | "Masters" | "Bachelors" | "Associates" | "High School";
 
@@ -27,6 +29,163 @@ interface Service {
   name: string;
   description: string;
 }
+
+const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+  const binaryString = window.atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+};
+
+const extractStringsFromDoc = (base64Data: string): string => {
+  let text = "";
+  try {
+    const binaryString = window.atob(base64Data);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const utf16decoder = new TextDecoder("utf-16le");
+    const utf16Str = utf16decoder.decode(bytes);
+    const utf16Cleaned = utf16Str.replace(/[^\x20-\x7E\s\u00A0-\u00FF\u0100-\u017F]/g, "");
+    const words = utf16Cleaned.split(/\s+/).filter(w => w.trim().length > 1 && !/^[^\w\s]{3,}$/.test(w));
+    if (words.length > 10) {
+      text = words.join(" ");
+    }
+  } catch (e) {
+    console.warn("Failed UTF-16 extraction for .doc", e);
+  }
+
+  if (text.length < 50) {
+    try {
+      const binaryString = window.atob(base64Data);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const utf8decoder = new TextDecoder("utf-8");
+      const asciiStr = utf8decoder.decode(bytes);
+      const asciiCleaned = asciiStr.replace(/[^\x20-\x7E\s]/g, "");
+      const words = asciiCleaned.split(/\s+/).filter(w => w.trim().length > 1 && !/^[^\w\s]{2,}$/.test(w));
+      text = words.join(" ");
+    } catch (e) {
+      console.warn("Failed UTF-8 extraction for .doc", e);
+    }
+  }
+
+  text = text.replace(/\s+/g, " ").trim();
+  if (text.length > 20000) {
+    text = text.slice(0, 20000) + "... [Extracted text truncated due to length]";
+  }
+  return text || "[Unparseable binary .doc content]";
+};
+
+const sanitizeContentsForGemini = async (chatMessages: Array<{ role: "user" | "model"; text: string; pdf?: { name: string; data: string } }>) => {
+  const mapped = chatMessages.map(m => {
+    return { role: m.role, text: m.text, pdf: m.pdf };
+  });
+
+  const firstUserIdx = mapped.findIndex(m => m.role === "user");
+  if (firstUserIdx === -1) {
+    return [];
+  }
+
+  const sliced = mapped.slice(firstUserIdx);
+  const contents: any[] = [];
+
+  for (const msg of sliced) {
+    const parts: any[] = [];
+    if (msg.pdf && msg.pdf.data) {
+      const fileName = msg.pdf.name || "document";
+      const fileExt = fileName.split('.').pop()?.toLowerCase();
+
+      if (fileExt === "pdf") {
+        parts.push({
+          inlineData: {
+            mimeType: "application/pdf",
+            data: msg.pdf.data
+          }
+        });
+        parts.push({
+          text: `[Attached PDF Document: ${fileName}]\n\n${msg.text}`
+        });
+      } else if (fileExt === "docx") {
+        try {
+          const arrayBuffer = base64ToArrayBuffer(msg.pdf.data);
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          const extractedText = (result.value || "").trim();
+          parts.push({
+            text: `[Attached Word Document (.docx): ${fileName}]\n--- EXTRACTED CONTENT ---\n${extractedText || "[Empty Document]"}\n--- END EXTRACTED CONTENT ---\n\n${msg.text}`
+          });
+        } catch (err: any) {
+          console.error("Failed to parse docx using mammoth:", err);
+          parts.push({
+            text: `[Attached Word Document (.docx): ${fileName} - Error Parsing Content]\n\n${msg.text}`
+          });
+        }
+      } else if (fileExt === "doc") {
+        try {
+          const extractedText = extractStringsFromDoc(msg.pdf.data);
+          parts.push({
+            text: `[Attached Word Document (.doc): ${fileName}]\n--- EXTRACTED CONTENT ---\n${extractedText}\n--- END EXTRACTED CONTENT ---\n\n${msg.text}`
+          });
+        } catch (err: any) {
+          console.error("Failed to parse doc:", err);
+          parts.push({
+            text: `[Attached Word Document (.doc): ${fileName} - Error Parsing Content]\n\n${msg.text}`
+          });
+        }
+      } else {
+        try {
+          const binaryString = window.atob(msg.pdf.data);
+          const textContent = new TextDecoder("utf-8").decode(
+            new Uint8Array(binaryString.split("").map(c => c.charCodeAt(0)))
+          );
+          parts.push({
+            text: `[Attached file: ${fileName}]\n--- EXTRACTED CONTENT ---\n${textContent}\n--- END EXTRACTED CONTENT ---\n\n${msg.text}`
+          });
+        } catch (err) {
+          parts.push({
+            text: `[Attached file: ${fileName}]\n\n${msg.text}`
+          });
+        }
+      }
+    } else {
+      parts.push({ text: msg.text });
+    }
+
+    if (contents.length === 0) {
+      contents.push({
+        role: "user",
+        parts
+      });
+    } else {
+      const last = contents[contents.length - 1];
+      if (last.role === msg.role) {
+        last.parts.push(...parts);
+      } else {
+        contents.push({
+          role: msg.role,
+          parts
+        });
+      }
+    }
+  }
+
+  return contents;
+};
+
+const getGeminiClient = () => {
+  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+  if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
+    throw new Error("Missing Gemini API Key");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 const SERVICES: Service[] = [
   { id: "coaching", name: "One-on-One Coaching", description: "Deep partnership for research success." },
@@ -83,6 +242,21 @@ export const Wizard = () => {
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [status, setStatus] = useState<"online" | "offline" | "checking">("checking");
+
+  useEffect(() => {
+    const checkStatus = () => {
+      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
+        setStatus("offline");
+      } else {
+        setStatus("online");
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // PDF upload states for Wizard Chatbot
   const [wizardPdf, setWizardPdf] = useState<{ name: string; data: string } | null>(null);
@@ -213,35 +387,59 @@ export const Wizard = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch("/api/wizard/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: updatedHistory.map(m => ({
-            role: m.role,
-            text: m.text,
-            pdf: m.pdf
-          })),
-          academicLevel: level,
-          selectedServices: selectedServices.map(sid => SERVICES.find(s => s.id === sid)?.name || sid),
-        }),
+      const systemInstruction = `
+You are Dr. Michelle Mendivil's exclusive academic advisor chatbot on the Modern Care Consulting website. You are a Latina American woman who is straight to business.
+Your personality: Concise, highly knowledgeable, professional, and very helpful. You get straight to the point but maintain supportive efficiency.
+
+The user is current in an assessment wizard.
+User's Self-Declared Details:
+- Academic Level: ${level || "Not selected yet"}
+- Focus Areas they might be interested in: ${selectedServices && selectedServices.length > 0 ? selectedServices.map(sid => SERVICES.find(s => s.id === sid)?.name || sid).join(", ") : "None specified yet"}
+
+Our primary offerings that you MUST guide them towards:
+1. Coaching & Partnerships (Ongoing support, accountability, structure, drafts review):
+   - 1-Hour Zoom Session ($125) - Starter roadmap to resolve immediate roadblocks.
+   - 2 Weeks Unlimited Coaching ($400) - Intensive email-based sprint.
+   - 30 Days Unlimited Coaching ($600) - Build serious writing momentum and daily accountability.
+   - 30 Days Coaching + Editing ($1,200) - Unlimited coaching combined with APA check and rigorous edits of drafts.
+   - 3 Months Coaching + Editing ($3,200) - Complete quarter-length proposal-to-defense research support and substantive editing.
+   - 6 Months Coaching + Editing ($5,100 / $850/month) - Complete thesis/proposal to final defense validation. Highly recommended for candidates who need end-to-end guidance.
+   - 1 Year Unlimited Everything ($8,500) - The ultimate executive consulting tier. Complete priority support.
+
+2. Priority Turnaround Editing:
+   - 7-Day Edit ($445) - Absolute grammatical correctness and strict style manual alignment.
+   - 4-Day Edit ($650) - Fast turnaround for impending graduate school deadlines.
+   - 2-Day Edit ($1,200) - Ultra-fast professional 48-hour dissertation polish.
+   - 24-Hour Rush Edit ($2,500) - Emergency tier queue slot returned within exactly 24 hours.
+
+3. Individual A-La-Carte Services:
+   - Developmental Editing ($350) - Structure, logical flow, literature synthesis.
+   - Copy Editing ($200) - Academic tone refinement and syntax.
+   - Proofreading ($150) - Final minor spelling and layout corrections before submission.
+   - APA Formatting ($120) - Meticulous styles, referencing tables, header hierarchies.
+   - Style Guide Compliance ($100) - Custom adaptation to local university handbooks.
+   - Reference List Audit ($80) - Crosscheck matching parenthetical text citations to bibliographic entries.
+
+CRITICAL INSTRUCTIONS:
+1. Speak in either English or Spanish depending on which language the user addresses you in or requests.
+2. Keep all responses very concise, accurate, knowledgeable, and straight to the point. No fluff or flowery pleasantries.
+3. When asking for further information or seeking clarification about their draft, timeline, or needs, you MUST put each question in bullet point format (e.g., using "-").
+4. Provide direct links to our pricing page and membership plans using markdown when appropriate: always link to [Membership & Pricing Plans](/pricing).
+5. Advise them that when they finish their session and click "Submit Request", this custom conversation transcript will be securely forwarded directly to Michelle Mendivil, PhD, who will review it and follow up to start their action plan.
+`.trim();
+
+      const sanitized = await sanitizeContentsForGemini(updatedHistory);
+      const client = getGeminiClient();
+      const response = await client.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: sanitized,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        }
       });
 
-      if (!response.ok) {
-        let errMsg = `Chat API error: ${response.statusText}`;
-        try {
-          const errData = await response.json();
-          if (errData && errData.error) {
-            errMsg = `Chat API error: ${errData.error}`;
-          }
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
-      const botReply = data.text || "I was unable to analyze that. Please try rephrasing your goal.";
+      const botReply = response.text || "I was unable to analyze that. Please try rephrasing your goal.";
       const finalHistory = [...updatedHistory, { role: "model" as const, text: botReply, pdf: undefined }];
       
       setChatHistory(finalHistory);
@@ -761,12 +959,28 @@ ${transcriptText}
                     </div>
                   )}
 
+                  {status === "offline" && (
+                    <div className="mb-2 p-4 bg-brand-pink/5 rounded-[20px] border border-brand-pink/15 text-center flex flex-col items-center gap-2">
+                      <p className="text-xs font-serif italic text-brand-text">
+                        The AI chatbot is currently offline. Please complete this wizard as normal, and send an email directly to:
+                      </p>
+                      <a
+                        href="mailto:info@modernCareconsulting.com?subject=Strategic Consultation Request&body=Hi Dr. Mendivil, I would like to schedule a strategic consultation."
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-earth hover:bg-brand-pink text-white rounded-full text-[10px] font-sans font-bold uppercase tracking-widest transition-all shadow-md shadow-brand-earth/10 hover:-translate-y-0.5 active:translate-y-0"
+                      >
+                        <Mail size={12} />
+                        info@modernCareconsulting.com
+                      </a>
+                    </div>
+                  )}
+
                   {/* Message Input bar */}
                   <div className="flex items-center gap-2 pt-2 border-t border-brand-pink/10">
                     <button
                       type="button"
                       onClick={() => wizardFileInputRef.current?.click()}
-                      className="w-10 h-10 bg-white border border-brand-pink/10 text-brand-earth hover:text-brand-pink hover:bg-brand-lavender/10 transition-all rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
+                      disabled={status === "offline"}
+                      className="w-10 h-10 bg-white border border-brand-pink/10 text-brand-earth hover:text-brand-pink hover:bg-brand-lavender/10 transition-all rounded-full flex items-center justify-center flex-shrink-0 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                       title="Attach PDF or Word file"
                     >
                       <Paperclip size={15} />
@@ -782,17 +996,17 @@ ${transcriptText}
                     <div className="relative flex-1">
                       <input 
                         type="text"
-                        className="w-full bg-white border border-brand-pink/10 rounded-full py-3.5 px-6 pr-14 text-xs font-serif italic text-brand-text focus:border-brand-pink/40 outline-none transition-all shadow-sm"
-                        placeholder="Share what you are looking for support with..."
+                        className="w-full bg-white border border-brand-pink/10 rounded-full py-3.5 px-6 pr-14 text-xs font-serif italic text-brand-text focus:border-brand-pink/40 outline-none transition-all shadow-sm disabled:bg-gray-100/50 disabled:text-brand-text/30"
+                        placeholder={status === "offline" ? "Advisor is offline - please use the email above" : "Share what you are looking for support with..."}
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && sendChatMessage()}
-                        disabled={isTyping}
+                        disabled={isTyping || status === "offline"}
                       />
                       <button
                         type="button"
                         onClick={() => sendChatMessage()}
-                        disabled={(!chatInput.trim() && !wizardPdf) || isTyping}
+                        disabled={(!chatInput.trim() && !wizardPdf) || isTyping || status === "offline"}
                         className="absolute right-2 top-1.5 w-9 h-9 bg-brand-earth text-white rounded-full flex items-center justify-center hover:bg-brand-pink transition-all disabled:opacity-30 disabled:hover:bg-brand-earth"
                       >
                         <Send size={12} />
