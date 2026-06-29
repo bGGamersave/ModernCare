@@ -965,11 +965,11 @@ ${transcriptText}
                         The AI chatbot is currently offline. Please complete this wizard as normal, and send an email directly to:
                       </p>
                       <a
-                        href="mailto:info@modernCareconsulting.com?subject=Strategic Consultation Request&body=Hi Dr. Mendivil, I would like to schedule a strategic consultation."
+                        href="mailto:michelle@moderncareconsulting.com?subject=Strategic Consultation Request&body=Hi Dr. Mendivil, I would like to schedule a strategic consultation."
                         className="inline-flex items-center gap-2 px-4 py-2 bg-brand-earth hover:bg-brand-pink text-white rounded-full text-[10px] font-sans font-bold uppercase tracking-widest transition-all shadow-md shadow-brand-earth/10 hover:-translate-y-0.5 active:translate-y-0"
                       >
                         <Mail size={12} />
-                        info@modernCareconsulting.com
+                        michelle@moderncareconsulting.com
                       </a>
                     </div>
                   )}
