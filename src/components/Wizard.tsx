@@ -180,7 +180,7 @@ const sanitizeContentsForGemini = async (chatMessages: Array<{ role: "user" | "m
 };
 
 const getGeminiClient = () => {
-  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
     throw new Error("Missing Gemini API Key");
   }
@@ -246,7 +246,7 @@ export const Wizard = () => {
 
   useEffect(() => {
     const checkStatus = () => {
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
         setStatus("offline");
       } else {
@@ -491,7 +491,7 @@ ${transcriptText}
     `.trim();
     
     // Create true email mailto link
-    window.location.href = `mailto:support@moderncareconsulting.com?subject=Strategic Consultation Request from ${formData.name}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:michelle@moderncareconsulting.com?subject=Strategic Consultation Request from ${formData.name}&body=${encodeURIComponent(body)}`;
     
     setIsSuccess(true);
   };

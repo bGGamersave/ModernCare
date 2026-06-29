@@ -167,7 +167,7 @@ const sanitizeContentsForGemini = async (chatMessages: Message[]) => {
 };
 
 const getGeminiClient = () => {
-  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
     throw new Error("Missing Gemini API Key");
   }
@@ -194,7 +194,7 @@ export const ChatBot = () => {
 
   useEffect(() => {
     const checkStatus = () => {
-      const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY;
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey || apiKey.trim() === "" || apiKey === "YOUR_API_KEY" || apiKey === "MY_GEMINI_API_KEY" || apiKey === "undefined") {
         setStatus("offline");
       } else {

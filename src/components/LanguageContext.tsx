@@ -34,3 +34,11 @@ export const useLanguage = () => {
   }
   return context;
 };
+
+export const useTranslation = () => {
+  const { language, setLanguage } = useLanguage();
+  const t = (en: string, es: string) => {
+    return language === "es" ? es : en;
+  };
+  return { t, language, setLanguage };
+};
